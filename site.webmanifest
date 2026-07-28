@@ -1,0 +1,9 @@
+{
+  "name": "Yago Xiangqi Arena",
+  "short_name": "Yago Arena",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5efe3",
+  "theme_color": "#8f1d22",
+  "icons": [{"src": "favicon.svg", "sizes": "any", "type": "image/svg+xml"}]
+}
