@@ -63,9 +63,16 @@
   let selectResult = null;
   if (viewer) {
     const frame = viewer.querySelector("[data-results-frame]");
+    const frameShell = viewer.querySelector(".frame-shell");
     const openResult = viewer.querySelector("[data-open-result]");
     const loading = viewer.querySelector("[data-frame-loading]");
     const tabsRoot = viewer.querySelector(".tabs");
+
+    // The original stylesheet reserved at least 760px for the iframe. That works
+    // for long Swiss tables but leaves a large empty block below shorter views.
+    frameShell.style.minHeight = "0";
+    const resultsSection = document.querySelector(".results-section");
+    if (resultsSection) resultsSection.style.paddingBottom = "48px";
 
     tabsRoot.innerHTML = `
       <button class="tab is-active" type="button" role="tab" aria-selected="true"
@@ -89,9 +96,19 @@
 
     const resizeFrame = () => {
       try {
-        const html = frame.contentDocument.documentElement.scrollHeight;
-        const body = frame.contentDocument.body.scrollHeight;
-        frame.style.height = `${Math.max(html, body, 760) + 18}px`;
+        // Collapse first: documentElement.scrollHeight is never smaller than the
+        // iframe viewport, so measuring a 760/1080px iframe prevented it shrinking.
+        frame.style.height = "1px";
+        const doc = frame.contentDocument;
+        const html = doc.documentElement;
+        const body = doc.body;
+        const contentHeight = Math.max(
+          body.scrollHeight,
+          body.offsetHeight,
+          html.scrollHeight,
+          html.offsetHeight
+        );
+        frame.style.height = `${Math.max(contentHeight, 80) + 4}px`;
       } catch {
         frame.style.height = "1080px";
       }
@@ -100,7 +117,8 @@
     frame.addEventListener("load", () => {
       loading.hidden = true;
       resizeFrame();
-      setTimeout(resizeFrame, 350);
+      setTimeout(resizeFrame, 100);
+      setTimeout(resizeFrame, 400);
     });
     addEventListener("resize", resizeFrame);
 
@@ -111,6 +129,7 @@
         item.setAttribute("aria-selected", String(active));
       });
       loading.hidden = false;
+      frame.style.height = "160px";
       frame.title = `${tab.dataset.resultLabel} del torneo ${tab.dataset.resultTournament}`;
       frame.src = tab.dataset.resultSrc;
       openResult.href = tab.dataset.resultSrc;
