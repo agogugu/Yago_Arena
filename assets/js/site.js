@@ -38,7 +38,6 @@
     revealItems.forEach((item) => item.classList.add("is-visible"));
   }
 
-  // The latest completed event is now the Top 16 knockout.
   const heroStats = document.querySelector(".hero-stats");
   if (heroStats) {
     heroStats.setAttribute("aria-label", "Statistiche dell'ultimo torneo");
@@ -68,8 +67,6 @@
     const loading = viewer.querySelector("[data-frame-loading]");
     const tabsRoot = viewer.querySelector(".tabs");
 
-    // The original stylesheet reserved at least 760px for the iframe. That works
-    // for long Swiss tables but leaves a large empty block below shorter views.
     frameShell.style.minHeight = "0";
     const resultsSection = document.querySelector(".results-section");
     if (resultsSection) resultsSection.style.paddingBottom = "48px";
@@ -78,26 +75,28 @@
       <button class="tab is-active" type="button" role="tab" aria-selected="true"
         data-result-src="swiss_arena_Swiss_20260724_1310.html"
         data-result-label="Classifica e turni"
-        data-result-tournament="Yago Arena Swiss 2026">Swiss · classifica</button>
+        data-result-tournament="Yago Arena Swiss 2026"
+        data-result-hash="risultati-swiss">Swiss · classifica</button>
       <button class="tab" type="button" role="tab" aria-selected="false"
         data-result-src="crosstable_arena_Swiss_20260724_1310.html"
         data-result-label="Tabellone incrociato"
-        data-result-tournament="Yago Arena Swiss 2026">Swiss · incroci</button>
+        data-result-tournament="Yago Arena Swiss 2026"
+        data-result-hash="risultati-swiss-incroci">Swiss · incroci</button>
       <button class="tab" type="button" role="tab" aria-selected="false"
         data-result-src="knockout_arena_knockout_20260728_1702.html"
         data-result-label="Tabellone knockout"
-        data-result-tournament="Top 16 Knockout 2026">Knockout · tabellone</button>
+        data-result-tournament="Top 16 Knockout 2026"
+        data-result-hash="risultati-knockout">Knockout · tabellone</button>
       <button class="tab" type="button" role="tab" aria-selected="false"
         data-result-src="crosstable_arena_knockout_20260728_1702.html"
         data-result-label="Tabella risultati knockout"
-        data-result-tournament="Top 16 Knockout 2026">Knockout · tabella</button>`;
+        data-result-tournament="Top 16 Knockout 2026"
+        data-result-hash="risultati-knockout-tabella">Knockout · tabella</button>`;
 
     const tabs = [...tabsRoot.querySelectorAll("[data-result-src]")];
 
     const resizeFrame = () => {
       try {
-        // Collapse first: documentElement.scrollHeight is never smaller than the
-        // iframe viewport, so measuring a 760/1080px iframe prevented it shrinking.
         frame.style.height = "1px";
         const doc = frame.contentDocument;
         const html = doc.documentElement;
@@ -122,7 +121,7 @@
     });
     addEventListener("resize", resizeFrame);
 
-    selectResult = (tab) => {
+    selectResult = (tab, updateHash = true) => {
       tabs.forEach((item) => {
         const active = item === tab;
         item.classList.toggle("is-active", active);
@@ -133,11 +132,28 @@
       frame.title = `${tab.dataset.resultLabel} del torneo ${tab.dataset.resultTournament}`;
       frame.src = tab.dataset.resultSrc;
       openResult.href = tab.dataset.resultSrc;
+      if (updateHash && tab.dataset.resultHash) {
+        history.replaceState(null, "", `#${tab.dataset.resultHash}`);
+      }
     };
 
     tabs.forEach((tab) => tab.addEventListener("click", () => {
       if (!tab.classList.contains("is-active")) selectResult(tab);
+      else if (tab.dataset.resultHash) history.replaceState(null, "", `#${tab.dataset.resultHash}`);
     }));
+
+    const openFromHash = () => {
+      const hash = location.hash.replace(/^#/, "");
+      if (!hash) return false;
+      const target = tabs.find((tab) => tab.dataset.resultHash === hash);
+      if (!target) return false;
+      selectResult(target, false);
+      requestAnimationFrame(() => document.querySelector("#risultati")?.scrollIntoView());
+      return true;
+    };
+
+    openFromHash();
+    addEventListener("hashchange", openFromHash);
   }
 
   const knockoutCard = document.querySelector(".next-card");
@@ -154,8 +170,9 @@
     knockoutCard.style.cursor = "pointer";
 
     const openKnockout = () => {
-      const knockoutTab = viewer?.querySelector('[data-result-src="knockout_arena_knockout_20260728_1702.html"]');
+      const knockoutTab = viewer?.querySelector('[data-result-hash="risultati-knockout"]');
       if (knockoutTab && selectResult) selectResult(knockoutTab);
+      else history.replaceState(null, "", "#risultati-knockout");
       document.querySelector("#risultati")?.scrollIntoView({ behavior: "smooth" });
     };
     knockoutCard.addEventListener("click", openKnockout);
